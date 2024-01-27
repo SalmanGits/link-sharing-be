@@ -30,7 +30,25 @@ const userSchema = new mongoose.Schema({
 });
 
 const User = mongoose.model('user', userSchema);
-
+const verifyToken = async (req, res, next) => {
+    const token = req.headers.authorization;
+    if (!token) {
+        return res.status(400).json({ message: 'token is needed' });
+    }
+    try {
+        const user = await jwt.verify(token, process.env.JWT_SECRET);
+        req.user = user;
+        next();
+    } catch (error) {
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ message: 'invalid' });
+        } else if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ message: 'exprired' });
+        } else {
+            return res.status(401).json({ message: 'invalid' });
+        }
+    }
+};
 
 app.use(express.json());
 app.use(cors())
@@ -89,11 +107,23 @@ app.post('/api/submit-form/:linkId', async (req, res) => {
         res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 });
-
-
-app.get('/api/submissions/:linkId', async (req, res) => {
+app.get("/api/profile", verifyToken, async (req, res) => {
     try {
-        const { linkId } = req.params;
+        const user = await User.findOne({ _id: req.user.id })
+        return res.status(200).json({ user });
+    }
+    catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+})
+
+
+app.get('/api/submissions', verifyToken, async (req, res) => {
+    try {
+        console.log("here")
+        let user = await User.findOne({ _id: req.user.id })
+        const linkId = user.linkId;
         const submissions = await Submission.find({ linkId });
         res.status(200).json(submissions);
     } catch (error) {
@@ -110,3 +140,5 @@ app.listen(PORT, () => {
 function generateUniqueId() {
     return uid.rnd(10)
 }
+
+
