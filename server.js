@@ -43,7 +43,7 @@ app.post('/api/signup', async (req, res) => {
         }
         const hashedPassword = await bcrypt.hash(req.body.password, 8);
         const linkId = generateUniqueId();
-        const user = new User({ linkId, password: hashedPassword, ...req.body })
+        const user = new User({ linkId, password: hashedPassword, name: req.body.name, email: req.body.email });
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
         await user.save()
         res.status(200).json({ linkId, token });
@@ -60,7 +60,7 @@ app.post("/api/login", async (req, res) => {
         if (!user) {
             return res.status(400).json({ message: "User Does not exists", success: false });
         }
-
+        console.log(user)
         const isPasswordValid = await bcrypt.compare(password, user.password);
         console.log(isPasswordValid)
 
