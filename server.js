@@ -41,7 +41,7 @@ app.post('/api/signup', async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ message: "Email already exists", success: false });
         }
-        const hashedPassword = await bcrypt.hash(req.body.password, Number(process.env.SALT));
+        const hashedPassword = await bcrypt.hash(req.body.password, 8);
         const linkId = generateUniqueId();
         const user = new User({ linkId, password: hashedPassword, ...req.body })
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
@@ -54,6 +54,7 @@ app.post('/api/signup', async (req, res) => {
 });
 app.post("/api/login", async (req, res) => {
     try {
+        console.log(req.body)
         const { email, password } = req.body;
         const user = await User.findOne({ email });
         if (!user) {
@@ -61,6 +62,7 @@ app.post("/api/login", async (req, res) => {
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
+        console.log(isPasswordValid)
 
         if (!isPasswordValid) {
             return res.status(400).json({ message: "Email or password is wrong", success: false });
